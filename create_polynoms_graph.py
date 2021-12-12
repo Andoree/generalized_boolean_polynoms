@@ -2,15 +2,8 @@ import codecs
 import os.path
 from collections import Counter
 from typing import Tuple, List, Dict
-import numpy as np
 
-LITERALS = ['x', 'y', 'z']
-TRANSFORMATIONS_VERBOSE = {
-    1: "x = -x + 1",
-    2: "0 = x +(-x) + 1",
-    0: "1 = x + -x",
-    -1: "-x = x + 1"
-}
+from generalized_boolean_polynoms.utils import LITERALS, TRANSFORMATIONS_VERBOSE
 
 """
     Какие компоненты мне здесь нужны?
@@ -213,12 +206,12 @@ def save_graph(polynom_nodes: Dict[str, Polynom], polynom_transformation_edges: 
     with codecs.open(edges_path, 'w+', encoding="utf-8") as edges_file:
         for poly_1_node_str, poly_1_dict in polynom_transformation_edges.items():
             for poly_2_node_str, transform_type in poly_1_dict.items():
-                edges_file.write(f"{poly_1_node_str}\t{poly_2_node_str}\t{transform_type}\n")
+                edges_file.write(f"{polynom_verbose_to_id[poly_1_node_str]}\t{polynom_verbose_to_id[poly_2_node_str]}\t{transform_type}\n")
 
-
+# TODO: Всё-таки рёбра ориентированные, надо это учитывать.
 def main():
-    node_index_path = "results/node_index.txt"
-    edges_path = "results/edges.txt"
+    node_index_path = "results/n_3/node_index.tsv"
+    edges_path = "results/n_3/edges.tsv"
     output_dir = os.path.dirname(node_index_path)
     if not os.path.exists(output_dir) and output_dir != '':
         os.makedirs(output_dir)
