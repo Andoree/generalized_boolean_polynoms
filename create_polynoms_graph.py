@@ -148,10 +148,11 @@ def update_transformation_edges_dict(polynom_transformation_edges: Dict[str, Dic
     transform_type = transformation_edge.transform_type
     if polynom_transformation_edges.get(str(edge_source)) is None:
         polynom_transformation_edges[str(edge_source)] = {}
-    if polynom_transformation_edges.get(str(edge_dest)) is None:
-        polynom_transformation_edges[str(edge_dest)] = {}
-    if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None and \
-            polynom_transformation_edges[str(edge_dest)].get(str(edge_source)) is None:
+    # if polynom_transformation_edges.get(str(edge_dest)) is None:
+    #     polynom_transformation_edges[str(edge_dest)] = {}
+    # if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None and \
+    #         polynom_transformation_edges[str(edge_dest)].get(str(edge_source)) is None:
+    if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None:
         polynom_transformation_edges[str(edge_source)][str(edge_dest)] = transform_type
 
 
@@ -206,9 +207,10 @@ def save_graph(polynom_nodes: Dict[str, Polynom], polynom_transformation_edges: 
     with codecs.open(edges_path, 'w+', encoding="utf-8") as edges_file:
         for poly_1_node_str, poly_1_dict in polynom_transformation_edges.items():
             for poly_2_node_str, transform_type in poly_1_dict.items():
-                edges_file.write(f"{polynom_verbose_to_id[poly_1_node_str]}\t{polynom_verbose_to_id[poly_2_node_str]}\t{transform_type}\n")
+                edges_file.write(
+                    f"{polynom_verbose_to_id[poly_1_node_str]}\t{polynom_verbose_to_id[poly_2_node_str]}\t{transform_type}\n")
 
-# TODO: Всё-таки рёбра ориентированные, надо это учитывать.
+
 def main():
     node_index_path = "results/n_3/node_index.tsv"
     edges_path = "results/n_3/edges.tsv"

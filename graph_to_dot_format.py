@@ -15,7 +15,7 @@ def graph_to_dot(node_id_to_verbose: pd.Series, edges: pd.DataFrame):
         poly_1_verbose = node_id_to_verbose[poly_1_id]
         poly_2_verbose = node_id_to_verbose[poly_2_id]
         transform_type_verbose = TRANSFORMATIONS_VERBOSE[transform_type_id]
-        edge_dot_representation = f"\"{poly_1_verbose}\" -- \"{poly_2_verbose}\" [ label=\"{transform_type_verbose}\" ];\n"
+        edge_dot_representation = f"\"{poly_1_verbose}\" -> \"{poly_2_verbose}\" [ label=\"{transform_type_verbose}\" ];\n"
         dot_representation += edge_dot_representation
     dot_representation += "}"
     return dot_representation
@@ -25,9 +25,9 @@ def graph_to_dot(node_id_to_verbose: pd.Series, edges: pd.DataFrame):
 
 
 def main():
-    node_index_path = "../results/n_1/node_index.tsv"
-    edges_path = "../results/n_1/edges.tsv"
-    output_dot_path = "../results/n_1/graph.dot"
+    node_index_path = "../results/n_2/node_index.tsv"
+    edges_path = "../results/n_2/edges.tsv"
+    output_dot_path = "../results/n_2/graph.dot"
     output_dir = os.path.dirname(output_dot_path)
     if not os.path.exists(output_dir) and output_dir != '':
         os.makedirs(output_dir)
