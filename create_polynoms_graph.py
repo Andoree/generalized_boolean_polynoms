@@ -64,10 +64,12 @@ class Polynom:
 
 class Transformation:
 
-    def __init__(self, source_poly: Polynom, dest_poly: Polynom, transform_type):
+    def __init__(self, source_poly: Polynom, dest_poly: Polynom, transform_type, literal_id, processed_monom_mask):
         self.source_poly = source_poly
         self.dest_poly = dest_poly
         self.transform_type = transform_type
+        self.literal_id = literal_id
+        self.processed_monom_mask = processed_monom_mask
 
     def __str__(self):
         return f"[{self.source_poly}] --- {TRANSFORMATIONS_VERBOSE[self.transform_type]} ---> [{self.dest_poly}]"
@@ -123,7 +125,8 @@ def apply_transformation_to_monom(monom, literal_id, num_literals=None):
 
 def process_new_polynom(new_polynom_monoms: List[Tuple[int]], new_monoms: List[Tuple[int]],
                         existing_polynom_nodes: Dict[str, Polynom], traverse_queue: List[Polynom],
-                        current_polynom: Polynom, transform_type: int):
+                        current_polynom: Polynom, transform_type: int, literal_id: int,
+                        processed_monom_mask):
     # Добавляем новые мономы в новый полином
     new_polynom_monoms.extend(new_monoms)
     # Создаём новый полином по результатам преобразования
@@ -137,7 +140,8 @@ def process_new_polynom(new_polynom_monoms: List[Tuple[int]], new_monoms: List[T
     else:
         new_polynom = existing_polynom_nodes[str(new_polynom)]
     transformation_edge = Transformation(source_poly=current_polynom, dest_poly=new_polynom,
-                                         transform_type=transform_type)
+                                         transform_type=transform_type, literal_id=literal_id,
+                                         processed_monom_mask=processed_monom_mask)
     return transformation_edge
 
 
@@ -153,7 +157,7 @@ def update_transformation_edges_dict(polynom_transformation_edges: Dict[str, Dic
     # if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None and \
     #         polynom_transformation_edges[str(edge_dest)].get(str(edge_source)) is None:
     if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None:
-        polynom_transformation_edges[str(edge_source)][str(edge_dest)] = transform_type
+        polynom_transformation_edges[str(edge_source)][str(edge_dest)] = transformation_edge
 
 
 def transformations_brute_force(num_literals: int, initial_polynom: Polynom):
@@ -178,7 +182,8 @@ def transformations_brute_force(num_literals: int, initial_polynom: Polynom):
                                                           existing_polynom_nodes=existing_polynom_nodes,
                                                           traverse_queue=traverse_queue,
                                                           current_polynom=current_polynom,
-                                                          transform_type=transform_type)
+                                                          transform_type=transform_type,
+                                                          literal_id=literal_id, processed_monom_mask=monom_mask)
                 update_transformation_edges_dict(polynom_transformation_edges=polynom_transformation_edges,
                                                  transformation_edge=transformation_edge, )
 
@@ -192,7 +197,8 @@ def transformations_brute_force(num_literals: int, initial_polynom: Polynom):
                                                       existing_polynom_nodes=existing_polynom_nodes,
                                                       traverse_queue=traverse_queue,
                                                       current_polynom=current_polynom,
-                                                      transform_type=transform_type)
+                                                      transform_type=transform_type,
+                                                      literal_id=literal_id, processed_monom_mask=-1)
             update_transformation_edges_dict(polynom_transformation_edges=polynom_transformation_edges,
                                              transformation_edge=transformation_edge, )
     return existing_polynom_nodes, polynom_transformation_edges
@@ -206,14 +212,21 @@ def save_graph(polynom_nodes: Dict[str, Polynom], polynom_transformation_edges: 
             node_index_file.write(f"{idx}\t{str(poly_str)}\n")
     with codecs.open(edges_path, 'w+', encoding="utf-8") as edges_file:
         for poly_1_node_str, poly_1_dict in polynom_transformation_edges.items():
-            for poly_2_node_str, transform_type in poly_1_dict.items():
-                edges_file.write(
-                    f"{polynom_verbose_to_id[poly_1_node_str]}\t{polynom_verbose_to_id[poly_2_node_str]}\t{transform_type}\n")
+            for poly_2_node_str, transformation_edge in poly_1_dict.items():
+                transform_type = transformation_edge.transform_type
+                literal_id = transformation_edge.literal_id
+                monom_mask = transformation_edge.processed_monom_mask
+                edges_file.write(f"{polynom_verbose_to_id[poly_1_node_str]}\t"
+                                 f"{polynom_verbose_to_id[poly_2_node_str]}\t"
+                                 f"{transform_type}\t"
+                                 f"{literal_id}\t"
+                                 f"{monom_mask}\n")
 
 
 def main():
-    node_index_path = "results/n_3/node_index.tsv"
-    edges_path = "results/n_3/edges.tsv"
+    num_literals = 3
+    node_index_path = f"results_new/n_{num_literals}/node_index.tsv"
+    edges_path = f"results_new/n_{num_literals}/edges.tsv"
     output_dir = os.path.dirname(node_index_path)
     if not os.path.exists(output_dir) and output_dir != '':
         os.makedirs(output_dir)
@@ -222,7 +235,7 @@ def main():
         os.makedirs(output_dir)
     initial_polynom = Polynom(list())
     print("INITIAL", initial_polynom)
-    polynom_nodes, polynom_transformation_edges = transformations_brute_force(num_literals=3,
+    polynom_nodes, polynom_transformation_edges = transformations_brute_force(num_literals=num_literals,
                                                                               initial_polynom=initial_polynom)
     save_graph(polynom_nodes=polynom_nodes, polynom_transformation_edges=polynom_transformation_edges,
                node_index_path=node_index_path, edges_path=edges_path)
