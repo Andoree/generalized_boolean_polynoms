@@ -68,3 +68,20 @@ def polynom_str_to_tex(polynom_str: str):
         polynom_str = polynom_str.replace(f"(-{literal})", r'\bar{' + literal + '}')
         # fr"\bar{'{' + literal + '}'}}")
     return polynom_str
+
+
+def split_polynom_str(polynom_str: str, ):
+    monoms = polynom_str.split('+')
+    num_monoms = len(monoms)
+    first_half_str = '+'.join(monoms[:num_monoms // 2])
+    second_half_str = '+'.join(monoms[num_monoms // 2:])
+
+    return first_half_str, second_half_str
+
+
+def get_polynom_length_from_str(polynom_str: str) -> int:
+    if polynom_str == '0':
+        return 0
+    else:
+        monoms = polynom_str.split('+')
+        return len(monoms)

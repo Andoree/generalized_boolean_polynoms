@@ -9,7 +9,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from generalized_boolean_polynoms.utils import TRANSFORMATIONS_VERBOSE, TRANSFORMATIONS_VERBOSE_MASKS, LITERALS, \
-    monom_mask_to_str, monom_mask_to_tex_str, TRANSFORMATIONS_VERBOSE_TEX_MASKS, polynom_str_to_tex
+    monom_mask_to_str, monom_mask_to_tex_str, TRANSFORMATIONS_VERBOSE_TEX_MASKS, polynom_str_to_tex, split_polynom_str, \
+    get_polynom_length_from_str
 
 
 def dijkstra_shortest_path(adjacency_lists: List[List[int]], start_vertex: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -148,6 +149,24 @@ def calculate_path_length_statistics(reversed_paths: List) -> Dict[int, int]:
     return stats_dict
 
 
+def calculate_path_extension_statistics(reversed_paths: List, node_id_to_poly_length) -> Dict[int, int]:
+    stats_dict = {}
+    for path in reversed_paths:
+        counter = 0
+        for i in range(len(path) - 1):
+            node_id_1 = path[i]
+            node_id_2 = path[i + 1]
+            node_1_poly_length = node_id_to_poly_length[node_id_1]
+            node_2_poly_length = node_id_to_poly_length[node_id_2]
+            if node_2_poly_length >= node_1_poly_length:
+                counter += 1
+        if stats_dict.get(counter) is None:
+            stats_dict[counter] = 0
+        stats_dict[counter] += 1
+
+    return stats_dict
+
+
 def save_stats_dict(stats_dict: Dict, path: str):
     with codecs.open(path, 'w+', encoding="utf-8") as out_file:
         for key, val in stats_dict.items():
@@ -192,8 +211,14 @@ def save_longest_reversed_paths(reversed_paths: List[List[int]], edges_df, node_
                     # transformation_type_verbose = TRANSFORMATIONS_VERBOSE[transform_type_id]
                     polynom_source_verbose = node_index[polynom_source_id]
                     polynom_source_verbose_tex = polynom_str_to_tex(polynom_source_verbose)
+
                     s += f"[{polynom_source_verbose}] = [apply {transform_verbose} to {transform_edge_monom_str}] = "
-                    s_tex += fr"{'{'}{polynom_source_verbose_tex} = [Apply\,({transform_verbose_tex})\,\,to\,\,{transform_edge_monom_tex_str}]{'}'} = "
+                    if len(polynom_source_verbose_tex) > 60:
+                        first_half_tex, second_half_tex = split_polynom_str(polynom_source_verbose_tex)
+                        s_tex += fr"{'{'}{first_half_tex} + {'}'} + "
+                        s_tex += fr"{'{'}{second_half_tex} = [Apply\,({transform_verbose_tex})\,\,to\,\,{transform_edge_monom_tex_str}]{'}'} = "
+                    else:
+                        s_tex += fr"{'{'}{polynom_source_verbose_tex} = [Apply\,({transform_verbose_tex})\,\,to\,\,{transform_edge_monom_tex_str}]{'}'} = "
                 if len(reversed_path) > 1:
                     polynom_dest_verbose = node_index[polynom_dest_id]
                     polynom_dest_verbose_tex = polynom_str_to_tex(polynom_dest_verbose)
@@ -211,19 +236,20 @@ def main():
     output_length_stats_path = f"../results_new/n_{num_literals}/shortest_paths_length.tsv"
     output_longest_path = f"../results_new/n_{num_literals}/longest_paths.txt"
     output_longest_path_tex = f"../results_new/n_{num_literals}/longest_paths.tex"
-    output_dir = os.path.dirname(output_length_stats_path)
-    if not os.path.exists(output_dir) and output_dir != '':
-        os.makedirs(output_dir)
-    output_dir = os.path.dirname(output_longest_path)
-    if not os.path.exists(output_dir) and output_dir != '':
-        os.makedirs(output_dir)
-        output_dir = os.path.dirname(output_longest_path_tex)
+    output_extension_stats_path = f"../results_new/n_{num_literals}/extensions_stats_length.tsv"
+    output_paths = (
+        output_length_stats_path, output_longest_path, output_longest_path_tex, output_extension_stats_path,
+    )
+    for out_path in output_paths:
+        output_dir = os.path.dirname(out_path)
         if not os.path.exists(output_dir) and output_dir != '':
             os.makedirs(output_dir)
 
     node_index_df = pd.read_csv(node_index_path, sep='\t', header=None, dtype={"node_id": int, "node_verbose": str},
                                 names=["node_id", "node_verbose"])
+    node_index_df["node_poly_length"] = node_index_df["node_verbose"].apply(get_polynom_length_from_str)
     node_index = node_index_df.set_index("node_id", )["node_verbose"]
+    node_id_to_poly_length = node_index_df.set_index("node_id", )["node_poly_length"]
     print("Индекс вершин загружен")
     edges_df = pd.read_csv(edges_path, sep='\t', header=None,
                            names=["poly_1_id", "poly_2_id", "transform_type_id", "literal_id", "target_monom_mask"])
@@ -236,11 +262,14 @@ def main():
     path_costs, previous_vertices = dijkstra_shortest_path(adjacency_lists, start_vertex_id)
     restored_reversed_paths = restore_reversed_paths(previous_vertices,
                                                      start_vertex_id=start_vertex_id)
-    stats_dict = calculate_path_length_statistics(reversed_paths=restored_reversed_paths)
-    save_stats_dict(stats_dict=stats_dict, path=output_length_stats_path)
+    path_length_stats_dict = calculate_path_length_statistics(reversed_paths=restored_reversed_paths)
+    save_stats_dict(stats_dict=path_length_stats_dict, path=output_length_stats_path)
     # print_paths(reversed_paths=restored_reversed_paths, edges_df=edges_df, node_index=node_index)
     save_longest_reversed_paths(reversed_paths=restored_reversed_paths, edges_df=edges_df, node_index=node_index,
                                 save_path=output_longest_path, save_path_tex=output_longest_path_tex)
+    extension_transforms_stats_dict = calculate_path_extension_statistics(reversed_paths=restored_reversed_paths,
+                                                                          node_id_to_poly_length=node_id_to_poly_length)
+    save_stats_dict(stats_dict=extension_transforms_stats_dict, path=output_extension_stats_path)
 
 
 if __name__ == '__main__':
