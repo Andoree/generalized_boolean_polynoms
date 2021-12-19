@@ -3,7 +3,7 @@ import os.path
 from collections import Counter
 from typing import Tuple, List, Dict
 
-from generalized_boolean_polynoms.utils import LITERALS, TRANSFORMATIONS_VERBOSE
+from generalized_boolean_polynoms.utils import LITERALS, TRANSFORMATIONS_VERBOSE, polynom_monoms_list_to_str
 
 """
     Какие компоненты мне здесь нужны?
@@ -209,7 +209,9 @@ def save_graph(polynom_nodes: Dict[str, Polynom], polynom_transformation_edges: 
     polynom_verbose_to_id = {poly_str: idx for idx, poly_str in enumerate(polynom_nodes.keys())}
     with codecs.open(node_index_path, 'w+', encoding="utf-8") as node_index_file:
         for poly_str, idx in polynom_verbose_to_id.items():
-            node_index_file.write(f"{idx}\t{str(poly_str)}\n")
+            polynom_object = polynom_nodes[poly_str]
+            polynom_monom_masks_str = polynom_monoms_list_to_str(monoms_list=polynom_object.monoms)
+            node_index_file.write(f"{idx}\t{str(poly_str)}\t{polynom_monom_masks_str}\n")
     with codecs.open(edges_path, 'w+', encoding="utf-8") as edges_file:
         for poly_1_node_str, poly_1_dict in polynom_transformation_edges.items():
             for poly_2_node_str, transformation_edge in poly_1_dict.items():
@@ -225,8 +227,8 @@ def save_graph(polynom_nodes: Dict[str, Polynom], polynom_transformation_edges: 
 
 def main():
     num_literals = 3
-    node_index_path = f"results_new/n_{num_literals}/node_index.tsv"
-    edges_path = f"results_new/n_{num_literals}/edges.tsv"
+    node_index_path = f"results/n_{num_literals}/node_index.tsv"
+    edges_path = f"results/n_{num_literals}/edges.tsv"
     output_dir = os.path.dirname(node_index_path)
     if not os.path.exists(output_dir) and output_dir != '':
         os.makedirs(output_dir)

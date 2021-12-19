@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Tuple
+import numpy as np
 
 LITERALS = ['x', 'y', 'z']
 TRANSFORMATIONS_VERBOSE = {
@@ -85,3 +86,43 @@ def get_polynom_length_from_str(polynom_str: str) -> int:
     else:
         monoms = polynom_str.split('+')
         return len(monoms)
+
+
+def polynom_monoms_list_to_str(monoms_list: List[Tuple[int]]) -> str:
+    monom_strs_list = []
+    for monom_tuple in monoms_list:
+        monom_str = ','.join((str(x) for x in monom_tuple))
+        monom_strs_list.append(monom_str)
+    polynom_str = '~~'.join(monom_strs_list)
+    return polynom_str
+
+
+def polynom_str_to_monoms_list(polynom_str: str, monoms_sep="~~", mask_sep=","):
+    if polynom_str is np.nan:
+        return list()
+    else:
+        monoms_strs = polynom_str.split(monoms_sep)
+        monoms_list = []
+        for monom_s in monoms_strs:
+            mask_values = [int(x) for x in monom_s.split(mask_sep)]
+            monoms_list.append(mask_values)
+        monoms_list.sort()
+        return monoms_list
+
+
+def polynom_cyclic_shift(polynom_monoms_list: List[List[int]], n):
+    # if len(polynom_monoms_list) > 0:
+    new_polynom_monoms = []
+    for monom in polynom_monoms_list:
+        np_monom = np.array(monom)
+        new_monom = list(np.roll(np_monom, n))
+        new_polynom_monoms.append(new_monom)
+    new_polynom_monoms.sort()
+    return new_polynom_monoms
+
+    # num_literals = len(polynom_monoms_list[0])
+    #
+    # new_array = polynom_monoms_list.copy()
+    # for i in range(1, num_literals):
+    #     for monom_mask in new_array:
+    #         np_monom_mask = np.r
