@@ -1,4 +1,5 @@
-from typing import List, Tuple
+import codecs
+from typing import List, Tuple, Dict
 import numpy as np
 
 LITERALS = ['x', 'y', 'z']
@@ -111,7 +112,6 @@ def polynom_str_to_monoms_list(polynom_str: str, monoms_sep="~~", mask_sep=","):
 
 
 def polynom_cyclic_shift(polynom_monoms_list: List[List[int]], n):
-    # if len(polynom_monoms_list) > 0:
     new_polynom_monoms = []
     for monom in polynom_monoms_list:
         np_monom = np.array(monom)
@@ -120,9 +120,19 @@ def polynom_cyclic_shift(polynom_monoms_list: List[List[int]], n):
     new_polynom_monoms.sort()
     return new_polynom_monoms
 
-    # num_literals = len(polynom_monoms_list[0])
-    #
-    # new_array = polynom_monoms_list.copy()
-    # for i in range(1, num_literals):
-    #     for monom_mask in new_array:
-    #         np_monom_mask = np.r
+
+def is_edge_expanding(row, node_id_to_poly_length) -> bool:
+    poly_source_id = row["poly_1_id"]
+    poly_target_id = row["poly_2_id"]
+    node_source_poly_length = node_id_to_poly_length[poly_source_id]
+    node_target_poly_length = node_id_to_poly_length[poly_target_id]
+    if node_source_poly_length >= node_target_poly_length:
+        return True
+    return False
+
+
+def save_paths_dict(source_id_path_tuples: List[Tuple[int, List[int]]], save_path):
+    with codecs.open(save_path, 'w+', encoding="utf-8") as out_file:
+        for (source_node_id, path) in source_id_path_tuples:
+            path_str = ','.join((str(x) for x in path))
+            out_file.write(f"{source_node_id}\t{path_str}\n")

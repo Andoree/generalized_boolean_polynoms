@@ -11,7 +11,7 @@ from tqdm import tqdm
 from generalized_boolean_polynoms.create_polynoms_graph import Polynom
 from generalized_boolean_polynoms.utils import TRANSFORMATIONS_VERBOSE, TRANSFORMATIONS_VERBOSE_MASKS, LITERALS, \
     monom_mask_to_str, monom_mask_to_tex_str, TRANSFORMATIONS_VERBOSE_TEX_MASKS, polynom_str_to_tex, split_polynom_str, \
-    get_polynom_length_from_str, polynom_str_to_monoms_list, polynom_cyclic_shift
+    get_polynom_length_from_str, polynom_str_to_monoms_list, polynom_cyclic_shift, save_paths_dict
 
 
 def dijkstra_shortest_path(adjacency_lists: List[List[int]], start_vertex: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -254,14 +254,14 @@ def get_paths_with_expanding_transformations(reversed_paths: List[List[int]], no
             node_id_2 = reversed_path[i + 1]
             node_1_poly_length = node_id_to_poly_length[node_id_1]
             node_2_poly_length = node_id_to_poly_length[node_id_2]
-            if node_2_poly_length > node_1_poly_length:
+            if node_2_poly_length >= node_1_poly_length:
                 expanding_paths[path_source_node_id] = reversed_path
     return expanding_paths
 
 
 def save_longest_reversed_paths(reversed_paths: List[List[int]], edges_df, node_index, save_path: str,
                                 save_path_tex: str):
-    print(reversed_paths)
+    # print(reversed_paths)
     max_length = max((len(path) for path in reversed_paths))
     longest_paths = {}
     with codecs.open(save_path, 'w+', encoding="utf-8") as out_file, \
@@ -304,7 +304,7 @@ def save_transformation_paths_strings_and_tex(reversed_paths_dict: List[Tuple[in
 
 
 def main():
-    num_literals = 2
+    num_literals = 3
     node_index_path = f"../results/n_{num_literals}/node_index.tsv"
     edges_path = f"../results/n_{num_literals}/edges.tsv"
     output_length_stats_path = f"../results/n_{num_literals}/shortest_paths_length.tsv"
@@ -313,12 +313,13 @@ def main():
     output_filtered_longest_path = f"../results/n_{num_literals}/filtered_longest_paths.txt"
     output_filtered_longest_path_tex = f"../results/n_{num_literals}/filtered_longest_paths.tex"
     output_extension_stats_path = f"../results/n_{num_literals}/extensions_stats_length.tsv"
-    output_filtered_expanding_path = f"../results/n_{num_literals}/filtered_expanding_paths.txt"
-    output_filtered_expanding_path_tex = f"../results/n_{num_literals}/filtered_expanding_paths.tex"
+    output_filtered_expanding_path = f"../results/n_{num_literals}/expanding_paths/filtered_expanding_paths.txt"
+    output_filtered_expanding_path_tex = f"../results/n_{num_literals}/expanding_paths/filtered_expanding_paths.tex"
+    output_filtered_expanding_paths_path = f"../results/n_{num_literals}/expanding_paths/filt_exp_paths_nodex.tsv"
     output_paths = (
         output_length_stats_path, output_longest_path, output_longest_path_tex, output_extension_stats_path,
         output_filtered_longest_path, output_filtered_longest_path_tex, output_filtered_expanding_path,
-        output_filtered_expanding_path_tex
+        output_filtered_expanding_path_tex, output_filtered_expanding_paths_path
     )
     for out_path in output_paths:
         output_dir = os.path.dirname(out_path)
@@ -368,12 +369,15 @@ def main():
                                    node_index=node_index,
                                    save_path=output_filtered_longest_path,
                                    save_path_tex=output_filtered_longest_path_tex)
+    print("Ищем пути с расширяющими преобразованиями")
     expanding_paths_dict = get_paths_with_expanding_transformations(restored_reversed_paths, node_id_to_poly_length)
-    filtered_expanding_paths_dict = filter_paths_dict(paths_to_filter=expanding_paths_dict, node_index_df=node_index_df)
-    save_transformation_paths_strings_and_tex(reversed_paths_dict=filtered_expanding_paths_dict,
+    filtered_expanding_paths = filter_paths_dict(paths_to_filter=expanding_paths_dict, node_index_df=node_index_df)
+    save_transformation_paths_strings_and_tex(reversed_paths_dict=filtered_expanding_paths,
                                               edges_df=edges_df, node_index=node_index,
                                               save_path=output_filtered_expanding_path,
                                               save_path_tex=output_filtered_expanding_path_tex)
+    save_paths_dict(source_id_path_tuples=filtered_expanding_paths, save_path=output_filtered_expanding_paths_path)
+    print(f"Сохранили пути с расширяющими преобразованиями, их вот столько: {len(filtered_expanding_paths)}")
 
 
 if __name__ == '__main__':

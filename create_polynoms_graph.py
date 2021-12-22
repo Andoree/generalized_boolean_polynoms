@@ -3,6 +3,7 @@ import os.path
 from collections import Counter
 from typing import Tuple, List, Dict
 
+from generalized_boolean_polynoms.transform import apply_transformation_to_monom
 from generalized_boolean_polynoms.utils import LITERALS, TRANSFORMATIONS_VERBOSE, polynom_monoms_list_to_str
 
 """
@@ -39,6 +40,11 @@ class Polynom:
         # print('-')
         filtered_monoms.sort()
         self.monoms = filtered_monoms
+
+    def filter_monoms(self):
+        monom_counter = Counter(self.monoms)
+        self.monoms = [monom for monom, count in monom_counter.items() if count % 2 == 1]
+        self.monoms.sort()
 
     def __str__(self):
         monoms_strs = []
@@ -78,51 +84,6 @@ class Transformation:
         return self.__str__()
 
 
-def apply_transformation_to_monom(monom, literal_id, num_literals=None):
-    if monom is None:
-        assert num_literals is not None
-        plus_x_monom, minus_x_monom, one_x_monom = [0, ] * num_literals, \
-                                                   [0, ] * num_literals, \
-                                                   [0, ] * num_literals
-        plus_x_monom[literal_id] = 1
-        minus_x_monom[literal_id] = -1
-        one_x_monom[literal_id] = 0
-        monoms = [plus_x_monom, minus_x_monom, one_x_monom]
-        transform_type = 2
-    else:
-        literal_mask_val = monom[literal_id]
-        if literal_mask_val == -1:
-            # Случай, когда переменная в мономе присутствует с отрицанием
-            plus_x_monom, one_x_monom = list(monom), list(monom)  # .copy()
-            plus_x_monom[literal_id] = 1
-            one_x_monom[literal_id] = 0
-            monoms = [plus_x_monom, one_x_monom]
-            transform_type = -1
-        elif literal_mask_val == 0:
-            # Случай, когда переменная в мономе не присутствует (не значима, равна 1)
-            plus_x_monom, minus_x_monom = list(monom), list(monom)  # monom.copy(), monom.copy()
-            plus_x_monom[literal_id] = 1  # min(x_monom[literal_id] + 1, 1)
-            minus_x_monom[literal_id] = -1
-            monoms = [plus_x_monom, minus_x_monom]
-            transform_type = 0
-        elif literal_mask_val == 1:
-            # Случай, когда переменная в мономе присутствует без отрицания
-            minus_x_monom, one_x_monom = list(monom), list(monom)  # monom.copy(), monom.copy()
-            minus_x_monom[literal_id] = -1
-            one_x_monom[literal_id] = 0
-            monoms = [minus_x_monom, one_x_monom]
-            transform_type = 1
-        else:
-            raise ValueError(f"Возможные значения маски монома: -1, 0, 1. Получено: {literal_mask_val}")
-
-        """
-        1: "x = -x + 1",
-        0: "1 = x + -x",
-        -1: "-x = x + 1"
-        """
-    return monoms, transform_type
-
-
 def process_new_polynom(new_polynom_monoms: List[Tuple[int]], new_monoms: List[Tuple[int]],
                         existing_polynom_nodes: Dict[str, Polynom], traverse_queue: List[Polynom],
                         current_polynom: Polynom, transform_type: int, literal_id: int,
@@ -152,10 +113,6 @@ def update_transformation_edges_dict(polynom_transformation_edges: Dict[str, Dic
     transform_type = transformation_edge.transform_type
     if polynom_transformation_edges.get(str(edge_source)) is None:
         polynom_transformation_edges[str(edge_source)] = {}
-    # if polynom_transformation_edges.get(str(edge_dest)) is None:
-    #     polynom_transformation_edges[str(edge_dest)] = {}
-    # if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None and \
-    #         polynom_transformation_edges[str(edge_dest)].get(str(edge_source)) is None:
     if polynom_transformation_edges[str(edge_source)].get(str(edge_dest)) is None:
         polynom_transformation_edges[str(edge_source)][str(edge_dest)] = transformation_edge
 
