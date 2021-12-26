@@ -2,7 +2,7 @@ import codecs
 from typing import List, Tuple, Dict
 import numpy as np
 
-LITERALS = ['x', 'y', 'z']
+LITERALS = ['x', 'y', 'z', 't', 'u', 'v']
 TRANSFORMATIONS_VERBOSE = {
     1: "x = -x + 1",
     2: "0 = x +(-x) + 1",
@@ -136,3 +136,13 @@ def save_paths_dict(source_id_path_tuples: List[Tuple[int, List[int]]], save_pat
         for (source_node_id, path) in source_id_path_tuples:
             path_str = ','.join((str(x) for x in path))
             out_file.write(f"{source_node_id}\t{path_str}\n")
+
+
+def get_monoms_literal_val_monom_literal_id(monoms: List[Tuple[int]], search_lit_val):
+    res_monom_id, res_literal_id = -1, -1
+    for monom_id, monom in enumerate(monoms):
+        for literal_id, literal_value in enumerate(monom):
+            if literal_value == search_lit_val:
+                return monom_id, literal_id
+
+    return res_monom_id, res_literal_id

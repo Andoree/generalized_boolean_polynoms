@@ -1,10 +1,11 @@
 import codecs
 import os.path
-from collections import Counter
+import time
+from queue import PriorityQueue
 from typing import Tuple, List, Dict
-
+from generalized_boolean_polynoms.utils import LITERALS, polynom_monoms_list_to_str
+from generalized_boolean_polynoms.classes import Polynom, Transformation
 from generalized_boolean_polynoms.transform import apply_transformation_to_monom
-from generalized_boolean_polynoms.utils import LITERALS, TRANSFORMATIONS_VERBOSE, polynom_monoms_list_to_str
 
 """
     Какие компоненты мне здесь нужны?
@@ -28,66 +29,10 @@ from generalized_boolean_polynoms.utils import LITERALS, TRANSFORMATIONS_VERBOSE
 """
 
 
-class Polynom:
-    def __init__(self, monoms, ):
-        # print(monoms)
-        monoms = [tuple(t) for t in monoms]
-        # print(monoms)
-        # print('-')
-        monom_counter = Counter(monoms)
-        filtered_monoms = [monom for monom, count in monom_counter.items() if count % 2 == 1]
-        # print("filtered", filtered_monoms)
-        # print('-')
-        filtered_monoms.sort()
-        self.monoms = filtered_monoms
-
-    def filter_monoms(self):
-        monom_counter = Counter(self.monoms)
-        self.monoms = [monom for monom, count in monom_counter.items() if count % 2 == 1]
-        self.monoms.sort()
-
-    def __str__(self):
-        monoms_strs = []
-        if len(self.monoms) > 0:
-            for monom in self.monoms:
-                num_literals = len(monom)
-                s = ''
-                for lit, mask_value in zip(LITERALS[:num_literals], monom):
-                    if mask_value == 1:
-                        s += lit
-                    elif mask_value == -1:
-                        s += f'(-{lit})'
-                if s == '':
-                    s = '1'
-                monoms_strs.append(s)
-            return " + ".join(monoms_strs)
-        else:
-            return "0"
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class Transformation:
-
-    def __init__(self, source_poly: Polynom, dest_poly: Polynom, transform_type, literal_id, processed_monom_mask):
-        self.source_poly = source_poly
-        self.dest_poly = dest_poly
-        self.transform_type = transform_type
-        self.literal_id = literal_id
-        self.processed_monom_mask = processed_monom_mask
-
-    def __str__(self):
-        return f"[{self.source_poly}] --- {TRANSFORMATIONS_VERBOSE[self.transform_type]} ---> [{self.dest_poly}]"
-
-    def __repr__(self):
-        return self.__str__()
-
-
 def process_new_polynom(new_polynom_monoms: List[Tuple[int]], new_monoms: List[Tuple[int]],
-                        existing_polynom_nodes: Dict[str, Polynom], traverse_queue: List[Polynom],
+                        existing_polynom_nodes: Dict[str, Polynom], traverse_pq: PriorityQueue,
                         current_polynom: Polynom, transform_type: int, literal_id: int,
-                        processed_monom_mask):
+                        processed_monom_mask, current_dist: int):
     # Добавляем новые мономы в новый полином
     new_polynom_monoms.extend(new_monoms)
     # Создаём новый полином по результатам преобразования
@@ -97,7 +42,8 @@ def process_new_polynom(new_polynom_monoms: List[Tuple[int]], new_monoms: List[T
         # Если не обходили, то запоминаем, что теперь планируем обход
         existing_polynom_nodes[str(new_polynom)] = new_polynom
         # Если не обходили, включаем в очередь на обход.
-        traverse_queue.append(new_polynom)
+        traverse_pq.put((current_dist + 1, time.time(), new_polynom))
+        # traverse_queue.append(new_polynom)
     else:
         new_polynom = existing_polynom_nodes[str(new_polynom)]
     transformation_edge = Transformation(source_poly=current_polynom, dest_poly=new_polynom,
@@ -118,15 +64,22 @@ def update_transformation_edges_dict(polynom_transformation_edges: Dict[str, Dic
 
 
 def transformations_brute_force(num_literals: int, initial_polynom: Polynom):
-    traverse_queue = [initial_polynom]
+    # traverse_queue = [initial_polynom]
+    traverse_queue_pq = PriorityQueue()
+    traverse_queue_pq.put((0, time.time(), initial_polynom))
     existing_polynom_nodes = {str(initial_polynom): initial_polynom}
+    min_path_length_stats_dict = {}
     polynom_transformation_edges = {}
     # Маппинг из строки в объект класса полином.
     literals = LITERALS[:num_literals]
-    while len(traverse_queue) > 0:
+    while not traverse_queue_pq.empty():
         if len(existing_polynom_nodes) % 1000 == 0:
             print(len(existing_polynom_nodes))
-        current_polynom = traverse_queue.pop(0)
+        # current_polynom = traverse_queue.pop(0)
+        current_vertex_dist, _, current_polynom = traverse_queue_pq.get()
+        if min_path_length_stats_dict.get(current_vertex_dist) is None:
+            min_path_length_stats_dict[current_vertex_dist] = 0
+        min_path_length_stats_dict[current_vertex_dist] += 1
         polynom_monoms = current_polynom.monoms
         for monom_mask in polynom_monoms:
             num_literals = len(monom_mask)
@@ -137,9 +90,10 @@ def transformations_brute_force(num_literals: int, initial_polynom: Polynom):
                 new_monoms, transform_type = apply_transformation_to_monom(monom_mask, literal_id, )
                 transformation_edge = process_new_polynom(new_polynom_monoms=new_polynom_monoms, new_monoms=new_monoms,
                                                           existing_polynom_nodes=existing_polynom_nodes,
-                                                          traverse_queue=traverse_queue,
+                                                          traverse_pq=traverse_queue_pq,
                                                           current_polynom=current_polynom,
                                                           transform_type=transform_type,
+                                                          current_dist=current_vertex_dist,
                                                           literal_id=literal_id, processed_monom_mask=monom_mask)
                 update_transformation_edges_dict(polynom_transformation_edges=polynom_transformation_edges,
                                                  transformation_edge=transformation_edge, )
@@ -152,13 +106,13 @@ def transformations_brute_force(num_literals: int, initial_polynom: Polynom):
                                                                        num_literals=num_literals)
             transformation_edge = process_new_polynom(new_polynom_monoms=new_polynom_monoms, new_monoms=new_monoms,
                                                       existing_polynom_nodes=existing_polynom_nodes,
-                                                      traverse_queue=traverse_queue,
+                                                      traverse_pq=traverse_queue_pq,
                                                       current_polynom=current_polynom,
-                                                      transform_type=transform_type,
+                                                      transform_type=transform_type, current_dist=current_vertex_dist,
                                                       literal_id=literal_id, processed_monom_mask=-1)
             update_transformation_edges_dict(polynom_transformation_edges=polynom_transformation_edges,
                                              transformation_edge=transformation_edge, )
-    return existing_polynom_nodes, polynom_transformation_edges
+    return existing_polynom_nodes, polynom_transformation_edges, min_path_length_stats_dict
 
 
 def save_graph(polynom_nodes: Dict[str, Polynom], polynom_transformation_edges: Dict[str, Dict[str, Transformation]],
@@ -194,10 +148,14 @@ def main():
         os.makedirs(output_dir)
     initial_polynom = Polynom(list())
     print("INITIAL", initial_polynom)
-    polynom_nodes, polynom_transformation_edges = transformations_brute_force(num_literals=num_literals,
-                                                                              initial_polynom=initial_polynom)
+    polynom_nodes, polynom_transformation_edges, min_path_length_stats_dict = transformations_brute_force(
+        num_literals=num_literals,
+        initial_polynom=initial_polynom)
     save_graph(polynom_nodes=polynom_nodes, polynom_transformation_edges=polynom_transformation_edges,
                node_index_path=node_index_path, edges_path=edges_path)
+    print("Статистика длин путей:")
+    for k, v in min_path_length_stats_dict.items():
+        print(f"{k}: {v}")
     # print(len(polynom_nodes))
     # print("Число вершин", polynom_nodes.keys())
     # print('--')

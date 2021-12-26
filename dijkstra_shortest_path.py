@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from generalized_boolean_polynoms.create_polynoms_graph import Polynom
+from generalized_boolean_polynoms.classes import Polynom
 from generalized_boolean_polynoms.utils import TRANSFORMATIONS_VERBOSE, TRANSFORMATIONS_VERBOSE_MASKS, LITERALS, \
     monom_mask_to_str, monom_mask_to_tex_str, TRANSFORMATIONS_VERBOSE_TEX_MASKS, polynom_str_to_tex, split_polynom_str, \
     get_polynom_length_from_str, polynom_str_to_monoms_list, polynom_cyclic_shift, save_paths_dict
@@ -45,15 +45,7 @@ def dijkstra_shortest_path(adjacency_lists: List[List[int]], start_vertex: int) 
                     path_costs[neighbor_id] = path_cost_to_neighbor_from_current
                     vertices_to_visit_pq.put((path_cost_to_neighbor_from_current, neighbor_id))
 
-        # for vertex_id, dist in enumerate(weighted_adjacency_matrix[current_vertex_id]):
-        #     if vertex_id not in visited_nodes_set and not np.isnan(dist):
-        #         path_cost_from_this_node = path_costs[current_vertex_id] + dist
-        #         if path_cost_from_this_node < path_costs[vertex_id]:
-        #             previous_vertices[vertex_id] = current_vertex_id
-        #             path_costs[vertex_id] = path_cost_from_this_node
-        #             vertices_to_visit[vertex_id] = path_cost_from_this_node
         visited_nodes_set.add(current_vertex_id)
-        # vertices_to_visit[current_vertex_id] = np.inf
     if len(visited_nodes_set) < num_vertices:
         raise ValueError("Граф не является связным")
 
@@ -204,6 +196,8 @@ def filter_paths_dict(paths_to_filter: Dict[int, List[int]], node_index_df):
     return filtered_paths
 
 
+# TODO: Зарефакторить: создание строкового представления одного полинома - отдельный метод
+# TODO: После того как зарефакторю, использовать созданный метод везде, где генерирую тех
 def create_polynom_text_and_tex_strings(node_index, vertex_id, reversed_path, edges_df):
     s = f"Polynom {node_index[vertex_id]}, length = {len(reversed_path)}: "
     s_tex = f"Polynom ${polynom_str_to_tex(node_index[vertex_id])}$, Number of transformations = {len(reversed_path) - 1}\n\\begin{'{' + 'dmath' + '}'}\n"

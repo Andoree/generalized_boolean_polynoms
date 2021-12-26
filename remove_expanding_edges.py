@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from generalized_boolean_polynoms.create_polynoms_graph import Polynom
+from generalized_boolean_polynoms.classes import Polynom
 from generalized_boolean_polynoms.dijkstra_shortest_path import monom_str_to_tuple
 from generalized_boolean_polynoms.utils import TRANSFORMATIONS_VERBOSE, TRANSFORMATIONS_VERBOSE_MASKS, LITERALS, \
     monom_mask_to_str, monom_mask_to_tex_str, TRANSFORMATIONS_VERBOSE_TEX_MASKS, polynom_str_to_tex, split_polynom_str, \
