@@ -1,5 +1,5 @@
 import codecs
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set
 import numpy as np
 
 LITERALS = ['x', 'y', 'z', 't', 'u', 'v']
@@ -126,7 +126,7 @@ def is_edge_expanding(row, node_id_to_poly_length) -> bool:
     poly_target_id = row["poly_2_id"]
     node_source_poly_length = node_id_to_poly_length[poly_source_id]
     node_target_poly_length = node_id_to_poly_length[poly_target_id]
-    if node_source_poly_length >= node_target_poly_length:
+    if node_target_poly_length >= node_source_poly_length:
         return True
     return False
 
@@ -146,3 +146,20 @@ def get_monoms_literal_val_monom_literal_id(monoms: List[Tuple[int]], search_lit
                 return monom_id, literal_id
 
     return res_monom_id, res_literal_id
+
+
+def filter_reversed_paths(paths: List[List[int]], keep_ids_set: Set) -> List[Tuple[int, List[int]]]:
+    # print(reversed_paths)
+    # max_length = max((len(path) for path in reversed_paths))
+    kept_paths = []
+    # with codecs.open(save_path, 'w+', encoding="utf-8") as out_file, \
+    #         codecs.open(save_path_tex, 'w+', encoding="utf-8") as out_file_tex:
+    for (vertex_id, reversed_path) in enumerate(paths):
+        if vertex_id in keep_ids_set:
+            kept_paths.append((vertex_id, reversed_path))
+            # longest_paths[vertex_id] = reversed_path
+            # s, s_tex = create_polynom_text_and_tex_strings(node_index, vertex_id, reversed_path, edges_df)
+            # out_file.write(f"{s}\n")
+            # out_file_tex.write(f"{s_tex}\n")
+            # longest_paths.append(longest_paths)
+    return kept_paths

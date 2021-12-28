@@ -16,7 +16,6 @@ class Polynom:
         monom_counter = Counter(self.monoms)
         self.monoms = [monom for monom, count in monom_counter.items() if count % 2 == 1]
 
-
     def sort_monoms(self):
         self.monoms.sort()
 
@@ -43,6 +42,51 @@ class Polynom:
 
     def __len__(self):
         return len(self.monoms)
+
+    def __mul__(self, other):
+        if other == 1:
+            return self
+        elif isinstance(other, Polynom):
+            new_poly = Polynom(list())
+            for monom_1 in self.monoms:
+                for monom_2 in other.monoms:
+                    num_literals = len(monom_1)
+                    new_mask = [0, ] * num_literals
+                    reduced_monom = False
+                    for literal_id in range(num_literals):
+                        lit_1 = monom_1[literal_id]
+                        lit_2 = monom_2[literal_id]
+                        if lit_1 == lit_2:
+                            #  (-1, -1), (0, 0), (1, 1)
+                            new_lit = lit_1
+                        elif lit_1 == 0:
+                            # (0, -1), (0, 1),
+                            new_lit = lit_2
+                        elif lit_2 == 0:
+                            # (-1, 0), (1, 0)
+                            new_lit = lit_1
+                        else:
+                            # (-1, 1), (1, -1),
+                            new_lit = None
+                            reduced_monom = True
+                        if reduced_monom:
+                            break
+                        else:
+                            new_mask[literal_id] = new_lit
+                    if reduced_monom:
+
+                        continue
+                    else:
+                        new_poly.monoms.append(new_mask)
+            if len(self.monoms) == 0:
+                new_poly.monoms = self.monoms
+            elif len(other.monoms) == 0:
+                new_poly.monoms = other.monoms
+            new_poly.filter_monoms()
+            new_poly.sort_monoms()
+            return new_poly
+        else:
+            raise ValueError(f"Polynom multiplication error")
 
 
 class Transformation:

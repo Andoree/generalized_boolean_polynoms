@@ -29,7 +29,7 @@ def filter_polynoms(polynoms: List[Polynom], num_literals) -> List[int]:
     return keep_poly_ids
 
 
-def save_dead_polynoms(dead_polynoms_tex_list: List[str], save_path: str):
+def save_dead_polynoms_tex(dead_polynoms_tex_list: List[str], save_path: str):
     with codecs.open(save_path, 'w+', encoding="utf-8") as inp_file:
         for tex_str in dead_polynoms_tex_list:
             s = "\\begin{dmath}\n" + '{' + f"{tex_str}" + '}\n'
@@ -42,8 +42,9 @@ def main():
     node_index_path = f"../results/n_{num_literals}/node_index.tsv"
     expanding_paths_with_min_path_nodes_path = f"../results/n_{num_literals}/expanding_paths/filt_exp_paths_nodex.tsv"
     output_dead_polynoms_tex_path = f"../results/n_{num_literals}/expanding_paths/dead_polynoms.tex"
+    output_expanding_paths_nodes_path = f"../results/n_{num_literals}/expanding_paths/expanding_and_dead_paths_nodes.tsv"
     output_paths = (
-        output_dead_polynoms_tex_path,
+        output_dead_polynoms_tex_path, output_expanding_paths_nodes_path
     )
     for out_path in output_paths:
         output_dir = os.path.dirname(out_path)
@@ -64,14 +65,21 @@ def main():
     merged_df["has_non_expanding_transform"] = merged_df["poly_object"].apply(
         lambda x: check_polynom_has_non_expanding_transform(poly=x, num_literals=num_literals))
     has_no_expanding_transform_df = merged_df[~merged_df["has_non_expanding_transform"]]
+    print('AAA', has_no_expanding_transform_df)
+    print('AAA', has_no_expanding_transform_df.columns)
+    # ['node_id', 'min_path_nodes', 'node_verbose', 'polynom_monoms_str', 'has_non_expanding_transform']
+    has_no_expanding_transform_df[
+        ['node_id', 'min_path_nodes', 'node_verbose', 'has_non_expanding_transform']].to_csv(
+        output_expanding_paths_nodes_path, sep='\t', index=False, )
     has_no_expanding_transform_df["polynom_tex"] = has_no_expanding_transform_df["node_verbose"].apply(
         polynom_str_to_tex)
     # dead_polynoms = has_no_expanding_transform_df["poly_object"].values
     # filtered_dead_polynoms_ids = filter_polynoms(polynoms=dead_polynoms, num_literals=num_literals)
     # print("Dead polynoms before filtering:", len(dead_polynoms))
     # print("Dead polynoms after filtering:", len(filtered_dead_polynoms_ids))
-    save_dead_polynoms(dead_polynoms_tex_list=has_no_expanding_transform_df["polynom_tex"].values,
-                       save_path=output_dead_polynoms_tex_path)
+    save_dead_polynoms_tex(dead_polynoms_tex_list=has_no_expanding_transform_df["polynom_tex"].values,
+                           save_path=output_dead_polynoms_tex_path)
+
     # print(has_no_expanding_transform_df)
     # print(has_no_expanding_transform_df.shape)
 
