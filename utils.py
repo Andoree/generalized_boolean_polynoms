@@ -163,3 +163,27 @@ def filter_reversed_paths(paths: List[List[int]], keep_ids_set: Set) -> List[Tup
             # out_file_tex.write(f"{s_tex}\n")
             # longest_paths.append(longest_paths)
     return kept_paths
+
+
+def print_paths(reversed_paths: List[List[int]], edges_df, node_index):
+    """
+    Метод получает на вход список инвертированных путей до целевых вершин, инвертирует их повторно,
+    чтобы получить прямые пути и выводит эти пути. Путь - это последовательность номеров вершин, через
+    которые проходит путь
+    :param reversed_paths: Список инвертированных путей
+    """
+    for vertex_id, reversed_path in enumerate(reversed_paths):
+        s = f"путь длины: {len(reversed_path)}:"
+        for i in range(len(reversed_path) - 1):
+            polynom_source_id = reversed_path[i]
+            polynom_dest_id = reversed_path[i + 1]
+            transform_type_id = edges_df[
+                (edges_df["poly_1_id"] == polynom_source_id) & (edges_df["poly_2_id"] == polynom_dest_id)][
+                "transform_type_id"].values[0]
+            transformation_type_verbose = TRANSFORMATIONS_VERBOSE[transform_type_id]
+            polynom_source_verbose = node_index[polynom_source_id]
+            s += f"[{polynom_source_verbose}] - ({transformation_type_verbose}) -> "
+        if len(reversed_path) > 1:
+            polynom_dest_verbose = node_index[polynom_dest_id]
+            s += polynom_dest_verbose
+        print(s)

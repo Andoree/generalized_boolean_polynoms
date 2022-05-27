@@ -19,9 +19,7 @@ def graph_to_dot(node_id_to_verbose: pd.Series, edges: pd.DataFrame):
         dot_representation += edge_dot_representation
     dot_representation += "}"
     return dot_representation
-        # print(poly_1_verbose, '|||', poly_2_verbose, '|||', transform_type_verbose)
-
-
+    # print(poly_1_verbose, '|||', poly_2_verbose, '|||', transform_type_verbose)
 
 
 def main():
@@ -33,7 +31,7 @@ def main():
         os.makedirs(output_dir)
 
     node_index_df = pd.read_csv(node_index_path, sep='\t', header=None, dtype={"node_id": int, "node_verbose": str},
-    names = ["node_id", "node_verbose"])
+                                names=["node_id", "node_verbose"])
     edges_df = pd.read_csv(edges_path, sep='\t', header=None, names=["poly_1_id", "poly_2_id", "transform_type_id"])
     print(node_index_df.shape)
     # print('--')
@@ -46,7 +44,6 @@ def main():
     # print(node_index[31])
     # print('aaa', node_index[0])
     # print(node_index.to_dict(orient=1))
-
 
     graph_dot_representation = graph_to_dot(node_id_to_verbose=node_index, edges=edges_df)
     with codecs.open(output_dot_path, 'w+', encoding="utf-8") as out_file:
