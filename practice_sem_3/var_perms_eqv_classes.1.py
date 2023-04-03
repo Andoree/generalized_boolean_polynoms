@@ -7,8 +7,7 @@ from typing import Dict, List, Set
 
 import numpy as np
 
-from generalized_boolean_polynoms.practice_sem_3.trashcan.find_shortest_polynoms_for_diploma_v2 import Monom, \
-    VariablesPermutation
+from generalized_boolean_polynoms.practice_sem_3.monoms import VariablesPermutation, Monom
 
 
 def create_variable_negation_monom2monom(var_id: int, monom_str2id: Dict[str, int]) -> Dict[int, int]:
