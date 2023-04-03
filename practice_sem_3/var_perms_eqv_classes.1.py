@@ -1,3 +1,4 @@
+import argparse
 import gc
 import math
 import os.path
@@ -176,15 +177,16 @@ def calculate_poly_eqv_classes(num_vars: int, perms: List[VariablesPermutation],
     print(f"Processed : {counter}")
 
 
-def main():
-    num_vars = 3
-    output_dir = f"D:/AnRoot/University/VMK/сем_4_диплом/res_n_{num_vars}_new"
+def main(args):
+    num_vars = args.num_vars
+    # output_dir = f"D:/AnRoot/University/VMK/сем_4_диплом/res_n_{num_vars}_new"
+    output_dir = os.path.join(args.output_dir, f"res_n_{num_vars}_new/")
     if not os.path.exists(output_dir) and output_dir != '':
         os.makedirs(output_dir)
     save_path = os.path.join(output_dir, "eqv_classes.txt")
     value_vec_length = 2 ** num_vars
-    num_ones_min = 0
-    num_ones_max = 8
+    num_ones_min = args.num_ones_min
+    num_ones_max = args.num_ones_max
     assert num_ones_min <= value_vec_length
     assert num_ones_max <= value_vec_length
 
@@ -211,4 +213,10 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num_vars', type=int, )
+    parser.add_argument('--num_ones_min', type=int, )
+    parser.add_argument('--num_ones_max', type=int, )
+    parser.add_argument('--output_dir', type=str, )
+    args = parser.parse_args()
+    main(args)
