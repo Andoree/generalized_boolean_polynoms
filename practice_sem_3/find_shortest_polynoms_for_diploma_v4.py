@@ -1,5 +1,6 @@
 import argparse
 import codecs
+import logging
 import os.path
 from collections import Counter
 from itertools import product, permutations
@@ -128,8 +129,9 @@ def main():
     output_minimum_monoms_numpy_dir = os.path.join(output_dir, "numpy_polys/")
     if not os.path.exists(output_minimum_monoms_numpy_dir) and output_minimum_monoms_numpy_dir != '':
         os.makedirs(output_minimum_monoms_numpy_dir)
-
+    logging.info("Loading poly_id2min_poly_id")
     poly_id2min_poly_id = load_poly_id2min_poly_id_from_directory(input_p_id2min_p_id_dir)
+    logging.info("Poly_id2min_poly_id is loaded")
     # for p_id, mi_p_id in poly_id2min_poly_id.items():
     #     s1 = int2binary_string(integer=p_id, length=2 ** num_vars)
     #     s2 = int2binary_string(integer=mi_p_id, length=2 ** num_vars)
