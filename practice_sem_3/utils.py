@@ -57,17 +57,31 @@ def load_poly_id2min_poly_id_from_directory(directory: str):
         assert np_batch.shape[-1] == 2
         assert len(np_batch.shape) == 2
         for f_id, min_f_id in np_batch:
-            poly_id2min_poly_id[f_id] = min_f_id
+            poly_id2min_poly_id[int(f_id)] = int(min_f_id)
     return poly_id2min_poly_id
 
 
+def load_poly_id2min_poly_id_numpy_from_directory(directory: str, num_functions):
+    np_array = np.zeros(shape=num_functions, dtype=np.uint32)
+    for filename in os.listdir(directory):
+        attrs = filename.split('.')
+        assert len(attrs) == 4
+        assert attrs[3] == "npy"
+        file_path = os.path.join(directory, filename)
+        np_batch = np.load(file_path)
+        assert np_batch.shape[-1] == 2
+        assert len(np_batch.shape) == 2
+        for f_id, min_f_id in np_batch:
+            np_array[int(f_id)] = int(min_f_id)
+    return np_array
 
-def load_poly_id2min_poly_monom_ids_numpy(npy_file_path: str, max_monom_id:int) -> Dict[int, List]:
+
+def load_poly_id2min_poly_monom_ids_numpy(npy_file_path: str, max_monom_id: int) -> Dict[int, List]:
     np_array = np.load(npy_file_path)
     (num_functions, max_num_monoms) = np_array.shape
     function_id2monom_ids = {}
     for poly_row in np_array:
         func_id = int(poly_row[0])
-        min_poly_monom_ids = [int(x) for x in  poly_row[1:] if int(x) <= max_monom_id]
+        min_poly_monom_ids = [int(x) for x in poly_row[1:] if int(x) <= max_monom_id]
         function_id2monom_ids[func_id] = min_poly_monom_ids
     return function_id2monom_ids
