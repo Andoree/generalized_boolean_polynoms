@@ -111,9 +111,10 @@ def create_monom2id(var_set2monoms: Dict[str, List[Monom]], num_vars):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_vars', type=int, )
-    parser.add_argument('--input_p_id2min_p_id_dir', type=str, )
-    parser.add_argument('--output_dir', type=str, )
+    parser.add_argument('--num_vars', type=int, default=4 )
+    parser.add_argument('--input_p_id2min_p_id_dir', type=str,
+                        default=f"D:/AnRoot/University/VMK/сем_4_диплом/res_n_4_new")
+    parser.add_argument('--output_dir', type=str, default=f"res_new/res_n_4_new" )
     args = parser.parse_args()
     num_vars = args.num_vars
     val_vec_length = 2 ** num_vars
@@ -187,7 +188,6 @@ def main():
     print(monom_value_vectors_matrix)
     num_found_functions = 0
     unique_min_poly_ids_to_find = set(int(x) for x in poly_id2min_poly_id)
-    # TODO
     expected_num_functions = len(unique_min_poly_ids_to_find)
 
     print(f"Expected num functions: {expected_num_functions}")
@@ -200,6 +200,7 @@ def main():
     writing_batch: List[Tuple[int, Set]] = []
     update_counter = 0
     batch_size = 10 ** 6
+    function_counter = 0
     permuted_new_poly_func_vector = np.zeros(shape=2 ** num_vars, dtype=int)
     found_poly_function_ids_set.add(0)
     batch_counter = 0
@@ -207,8 +208,8 @@ def main():
     pbar = tqdm(total=expected_num_functions, )
     while len(found_poly_function_ids_set) != expected_num_functions:
         # print(len(found_poly_function_ids_set.intersection(unique_min_poly_ids_to_find)))
-        if len(found_poly_function_ids_set) % 1000000 == 0:
-            print(f"Found: {len(found_poly_function_ids_set)}")
+        # if len(found_poly_function_ids_set) % 100000 == 0:
+        #     print(f"Found: {len(found_poly_function_ids_set)}")
         # pbar.n = len(found_poly_function_ids_set)
         # pbar.refresh()
         # if pbar.n != len(found_poly_function_ids_set):
@@ -219,15 +220,15 @@ def main():
         #         update_counter = 0
         # Беру полином из очереди. Раз он в очереди, то он уже минимальный
         (current_monom_ids, current_polynom_func_vector) = monoms_queue.get()
+        fffid = int((two_degrees * current_polynom_func_vector).sum())
 
         current_monoms_positive_masks = set(monom_id2positive_mask_str[idx] for idx in current_monom_ids)
 
         allowed_positive_masks = all_possible_positive_masks_set.difference(current_monoms_positive_masks)
 
         for new_monom_positive_mask in allowed_positive_masks:
-            monoms_list = monom_positive_mask2monoms[new_monom_positive_mask]
             # Пытаюсь добавить в имеющийся полином новый моном, маска которого не встречалась
-            for monom in monoms_list:
+            for monom in monom_positive_mask2monoms[new_monom_positive_mask]:
                 new_monom_func_vector = monom.func_vector
                 # mid = monom_str2id[monom.monom_str]
                 # new_monom_func_vector = monom_value_vectors_matrix[mid]
@@ -243,35 +244,18 @@ def main():
                 monom_str = monom.monom_str
 
                 if new_poly_function_id in unique_min_poly_ids_to_find:
-                    min_poly_id2find = poly_id2min_poly_id[new_poly_function_id]
-                    assert min_poly_id2find == new_poly_function_id
-                    # TODO
-                    # if min_poly_id2find in found_poly_function_ids_set:
-                    #     continue
-                    # assert new_poly_function_id not in found_poly_function_ids_set
                     new_monom_id = monom_str2id[monom_str]
 
                     new_monom_ids_set = current_monom_ids.copy()
                     new_monom_ids_set.add(new_monom_id)
-                    # z = np.zeros(shape=2 ** num_vars, dtype=int)
-                    # for m_id in new_monom_ids_set:
-                    #     z += monom_value_vectors_matrix[m_id]
-                    # z = z % 2
-                    # print('--')
-                    # print("current_polynom_func_vector", current_polynom_func_vector)
-                    # print("new_monom_func_vector", new_monom_func_vector)
-                    # print("new_poly_func_vector", new_poly_func_vector)
-                    # print("z", z)
-                    # print((current_polynom_func_vector + new_monom_func_vector) % 2 == new_poly_func_vector)
-                    # # print(z)
-                    # # print(new_poly_func_vector)
-                    # # print((z == new_poly_func_vector).all())
-                    # print('---')
+                    # if new_poly_function_id not in found_poly_function_ids_set:
                     monoms_queue.put((new_monom_ids_set, new_poly_func_vector))
                     found_poly_function_ids_set.add(new_poly_function_id)
                     writing_batch.append((new_poly_function_id, new_monom_ids_set))
 
                     if len(writing_batch) > batch_size:
+                        function_counter += len(writing_batch)
+                        print(f"Found: {len(found_poly_function_ids_set)}")
                         max_batch_num_monoms = max(len(t[1]) for t in writing_batch)
                         actual_batch_size = len(writing_batch)
                         batch_numpy = np.full((actual_batch_size, max_batch_num_monoms + 1), 4294967294,
@@ -297,6 +281,9 @@ def main():
 
                         if permuted_new_poly_function_id != min_poly_id2find:
                             continue
+                        if permuted_new_poly_function_id in found_poly_function_ids_set:
+                            break
+
 
                         new_monom_id = monom_str2id[monom_str]
                         new_monom_ids_set = current_monom_ids.copy()
@@ -306,12 +293,14 @@ def main():
                         # print(int2binary_string(integer=permuted_new_poly_function_id, length=2**num_vars),)
                         # print(' + '.join(monom_id2str[m_id] for m_id in permuted_monom_ids))
                         # print('--')
+                        # if permuted_new_poly_function_id not in found_poly_function_ids_set:
                         writing_batch.append((permuted_new_poly_function_id, permuted_monom_ids))
                         # writing_batch.append(f"{permuted_new_poly_function_id}"
                         #                      f"\t{','.join(str(x) for x in permuted_monom_ids)}")
                         found_poly_function_ids_set.add(permuted_new_poly_function_id)
                         monoms_queue.put((permuted_monom_ids, permuted_new_poly_func_vector))
                         if len(writing_batch) > batch_size:
+                            print(f"Found: {len(found_poly_function_ids_set)}")
                             max_batch_num_monoms = max(len(t[1]) for t in writing_batch)
                             actual_batch_size = len(writing_batch)
                             batch_numpy = np.full((actual_batch_size, max_batch_num_monoms + 1), 4294967295,
@@ -328,6 +317,7 @@ def main():
                             writing_batch.clear()
 
     if len(writing_batch) > 0:
+        function_counter += len(writing_batch)
         max_batch_num_monoms = max(len(t[1]) for t in writing_batch)
         actual_batch_size = len(writing_batch)
         batch_numpy = np.full((actual_batch_size, max_batch_num_monoms + 1), 4294967295,
@@ -344,7 +334,7 @@ def main():
 
             # filtered_monoms_list = [mon for mon in monoms_list if mon.monom_str not in added_monom_strs_list]
             # filtered_monoms[var_set_str] = filtered_monoms_list
-
+    print(f"function_counter: {function_counter}")
     # length_counter = Counter()
     # for i, (value_vector_str, m_ids) in enumerate(poly_value_vector_str2monom_ids.items()):
     #     monoms = [monom_id2str[m_id] for m_id in m_ids]
