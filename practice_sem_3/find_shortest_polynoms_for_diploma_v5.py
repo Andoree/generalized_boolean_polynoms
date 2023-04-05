@@ -185,7 +185,7 @@ def main():
 
         perms.append(var_perm)
     # perms = perms[1:]
-    print(monom_value_vectors_matrix)
+    # print(monom_value_vectors_matrix)
     num_found_functions = 0
     unique_min_poly_ids_to_find = set(int(x) for x in poly_id2min_poly_id)
     expected_num_functions = len(unique_min_poly_ids_to_find)
@@ -220,7 +220,7 @@ def main():
         #         update_counter = 0
         # Беру полином из очереди. Раз он в очереди, то он уже минимальный
         (current_monom_ids, current_polynom_func_vector) = monoms_queue.get()
-        fffid = int((two_degrees * current_polynom_func_vector).sum())
+
 
         current_monoms_positive_masks = set(monom_id2positive_mask_str[idx] for idx in current_monom_ids)
 
@@ -236,7 +236,7 @@ def main():
                 new_poly_func_vector = (current_polynom_func_vector + new_monom_func_vector) % 2
                 new_poly_function_id = int((two_degrees * new_poly_func_vector).sum())
                 new_poly_min_f_id = poly_id2min_poly_id[new_poly_function_id]
-                # TODO
+
                 # if new_poly_function_id not in unique_min_poly_ids_to_find:
                 #     continue
                 if new_poly_min_f_id in found_poly_function_ids_set:
@@ -270,8 +270,8 @@ def main():
                         writing_batch.clear()
                 else:
                     min_poly_id2find = poly_id2min_poly_id[new_poly_function_id]
-                    # if min_poly_id2find in found_poly_function_ids_set:
-                    #     continue
+                    if min_poly_id2find in found_poly_function_ids_set:
+                        continue
                     for perm in perms:
                         permuted_val_vec_index = perm.permuted_val_vec_index
                         permuted_new_poly_func_vector = new_poly_func_vector[permuted_val_vec_index]
@@ -283,7 +283,6 @@ def main():
                             continue
                         if permuted_new_poly_function_id in found_poly_function_ids_set:
                             break
-
 
                         new_monom_id = monom_str2id[monom_str]
                         new_monom_ids_set = current_monom_ids.copy()
